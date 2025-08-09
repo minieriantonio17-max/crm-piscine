@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CRM Piscine — Professional</title>
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#0a0a0a"/>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:#0b1116;color:#e6edf3}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px}
+.logo{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#0ea5e9,#1b9ad1);color:#fff;font-weight:700}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 24px}
+.card{background:#0f1620;border:1px solid #1f2937;border-radius:16px;padding:16px;margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{border:1px solid #1f2937;border-radius:14px;padding:12px;background:#0b1220}
+.pill{padding:2px 8px;border-radius:999px;font-size:12px}
+.pill.ok{background:#052e1a;color:#22c55e;border:1px solid #134e4a}
+.pill.bad{background:#3b0a0a;color:#ef4444;border:1px solid #7f1d1d}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #1f2937;text-align:left;color:#cbd5e1}
+.muted{color:#9aa7b2;font-size:12px}
+.controls{display:grid;grid-template-columns:2fr repeat(3,1fr) auto;gap:8px;margin-top:8px}
+input,select{background:#0b1220;border:1px solid #1f2937;color:#e6edf3;border-radius:12px;padding:10px 12px}
+.btn{border:1px solid #1f2937;background:#0b1220;color:#e6edf3;border-radius:12px;padding:8px 12px;cursor:pointer}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div style="display:flex;gap:10px;align-items:center"><div class="logo">AM</div><div><h1 style="margin:0">CRM Piscine — Professional</h1><div class="muted">Dashboard • Clienti • Visite • Outlook • Power BI (lettura)</div></div></div>
+</header>
+<div class="wrap">
+  <div class="card">
+    <div class="controls">
+      <input id="q" placeholder="Cerca cliente..."/>
+      <select id="fProv"><option value="">Provincia</option></select>
+      <select id="fStato"><option value="">Stato</option><option>In calo</option><option>In crescita</option><option>Stabile</option></select>
+      <select id="fTipo"><option value="">Tipo</option></select>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+    <div class="kpis" id="kpis" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <h3>Clienti (ordinati per peggiore variazione 2025H1 vs 2024/2)</h3>
+    <table id="tbl"><thead><tr><th>Cliente</th><th>Prov.</th><th>Tipo</th><th>Fatt. 2023</th><th>Fatt. 2024</th><th>2025 H1</th><th>Var %</th><th>Status</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+<script>
+function €(n){return (n||0).toLocaleString('it-IT',{style:'currency',currency:'EUR'})}
+let data=[], filtered=[];
+const PROVINCE=new Set(), TYPES=new Set();
+
+async function load(){
+  const r=await fetch('/data/master.json'); data=await r.json();
+  data.forEach(r=>{ if(r.province) PROVINCE.add(r.province); if(r.type) TYPES.add(r.type); });
+  const fProv=document.getElementById('fProv'); [...PROVINCE].sort().forEach(p=>fProv.append(new Option(p,p)));
+  const fTipo=document.getElementById('fTipo'); [...TYPES].sort().forEach(t=>fTipo.append(new Option(t,t)));
+  render();
+}
+
+function kpis(rows){
+  const sum=(a,k)=>a.reduce((s,r)=>s+(+r[k]||0),0);
+  const tot24=sum(rows,'fatturato_2024');
+  const ytd25_est=sum(rows,'fatturato_2025_h1')*2;
+  const target=1300000, minimo=950000;
+  const pctTarget=(ytd25_est/target*100)||0;
+  const pctMin=(ytd25_est/minimo*100)||0;
+  const nCalo=rows.filter(r=>r.status==='In calo').length;
+  const nCresc=rows.filter(r=>r.status==='In crescita').length;
+  const nStab=rows.filter(r=>r.status==='Stabile').length;
+  return [
+    ['Stima 2025 (da H1)', €(ytd25_est),''],
+    ['Target 2025', €(target), `<span class="pill ${pctTarget>=100?'ok':'bad'}">${pctTarget.toFixed(1)}%</span>`],
+    ['Minimo 2025', €(minimo), `<span class="pill ${pctMin>=100?'ok':'bad'}">${pctMin.toFixed(1)}%</span>`],
+    ['Totale 2024', €(tot24),''],
+    ['Clienti (↓/↑/=)', `${nCalo}/${nCresc}/${nStab}`, '']
+  ];
+}
+
+function render(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const p=document.getElementById('fProv').value;
+  const s=document.getElementById('fStato').value;
+  const t=document.getElementById('fTipo').value;
+  filtered=data.filter(r=>
+    (!q || (r.name||'').toLowerCase().includes(q)) &&
+    (!p || r.province===p) &&
+    (!s || r.status===s) &&
+    (!t || r.type===t)
+  ).sort((a,b)=> (a.var_25h1_vs_24_pct||0)-(b.var_25h1_vs_24_pct||0));
+
+  const k=document.getElementById('kpis');
+  k.innerHTML=kpis(filtered).map(([l,v,x])=>`<div class="kpi"><div class="muted">${l}</div><div style="font-weight:700">${v} ${x||''}</div></div>`).join('');
+
+  const tb=document.querySelector('#tbl tbody');
+  tb.innerHTML=filtered.map(r=>{
+    const v = (r.var_25h1_vs_24_pct===null||r.var_25h1_vs_24_pct===undefined||r.var_25h1_vs_24_pct==='')? '' : (r.var_25h1_vs_24_pct.toFixed ? r.var_25h1_vs_24_pct.toFixed(1) : r.var_25h1_vs_24_pct);
+    const cls = (v!=='' && +v<=-15)?'bad':(v!=='' && +v>=15?'ok':'');
+    return `<tr>
+      <td>${r.name||''}</td>
+      <td>${r.province||''}</td>
+      <td>${r.type||''}</td>
+      <td>${(r.fatturato_2023||0).toLocaleString('it-IT')}</td>
+      <td>${(r.fatturato_2024||0).toLocaleString('it-IT')}</td>
+      <td>${(r.fatturato_2025_h1||0).toLocaleString('it-IT')}</td>
+      <td><span class="pill ${cls}">${v!==''? v+'%':''}</span></td>
+      <td>${r.status||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('reset').onclick=()=>{document.getElementById('q').value='';document.getElementById('fProv').value='';document.getElementById('fStato').value='';document.getElementById('fTipo').value='';render();};
+['q','fProv','fStato','fTipo'].forEach(id=>document.getElementById(id).addEventListener('input', render));
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/service-worker.js'); }
+load();
+</script>
+</body>
+</html>

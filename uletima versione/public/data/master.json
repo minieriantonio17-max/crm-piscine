@@ -1,0 +1,16 @@
+[
+  {
+    "id": "kovacic-piscine",
+    "name": "Kovacic Piscine",
+    "province": "RE",
+    "type": "Costruttore",
+    "email": "info@kovacic.it",
+    "phone": "+39 000 000000",
+    "fatturato_2023": 80000,
+    "fatturato_2024": 90000,
+    "fatturato_2025_h1": 52000,
+    "var_24_vs_23_pct": 12.5,
+    "var_25h1_vs_24_pct": 15.0,
+    "status": "In crescita"
+  }
+]
