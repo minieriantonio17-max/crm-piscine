@@ -1,0 +1,23 @@
+# CRM Piscine — Personal Pro
+Pacchetto completo pronto per Vercel.
+
+## Passi per pubblicare
+1. Estrai lo ZIP sul PC.
+2. Crea un nuovo repo su GitHub (es. `crm-piscine-personal-pro`).
+3. Carica **tutto il contenuto** (cartelle `public/` e `api/` incluse).
+4. Su Vercel: **Add New → Project → Import Git Repository**.
+5. Apri l'URL che Vercel ti dà (es. `https://crm-tuo.vercel.app`).
+
+## Aggiornare i dati
+- Sostituisci `public/data/master.json` coi tuoi dati e fai Commit.
+- Oppure, in app → tab **Import** → incolla un link CSV/JSON pubblico da OneDrive/SharePoint → **Aggiorna da URL**.
+
+## Visite/Agenda
+- Aggiungi visite nella tab **Visite** e scarica il calendario con **Esporta .ics**.
+
+## Mappa
+- I marker usano i campi `lat`/`lng` nel `master.json`. Se mancanti, la mappa centrerà l'Italia.
+
+## Power BI (solo lettura)
+- Consigliato: pubblica un CSV/JSON su OneDrive/SharePoint e usa la tab **Import**.
+
